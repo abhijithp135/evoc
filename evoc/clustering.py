@@ -343,12 +343,11 @@ def evoc_clusters(
         Only returned in ``return_duplicates`` is True. A set of pairs of indices of
         potential duplicate points in the data.
     """
+
     nn_inds, nn_dists = knn_graph(data, n_neighbors=n_neighbors, verbose=verbose)
-    print(nn_inds, nn_dists)
     graph = neighbor_graph_matrix(
         neighbor_scale * n_neighbors, nn_inds, nn_dists, symmetrize_graph
     )
-    print("graph: ",graph)
     """
     At this point neighbourhood graph is generated
     """
@@ -361,11 +360,12 @@ def evoc_clusters(
             random_scale=0.1,
             scaling=0.5,
             noise_level=noise_level,
+            verbose=verbose
         )
     elif node_embedding_init is None:
         init_embedding = None
 
-    print("init embedding: ", init_embedding)
+    print("init embedding created")
     graph = graph.tocoo()
     embedding = node_embedding(
         graph,
@@ -376,6 +376,7 @@ def evoc_clusters(
         noise_level=noise_level,
         verbose=False,
     )
+    print("embeddings are created")
 
     if return_duplicates:
         duplicates = find_duplicates(nn_inds, nn_dists)
@@ -592,7 +593,7 @@ class EVoC(BaseEstimator, ClusterMixin):
             )
         )
 
-        print("Done")
+        print("clustering is done")
         if len(self.cluster_layers_) == 1:
             self.labels_ = self.cluster_layers_[0]
             self.membership_strengths_ = self.membership_strength_layers_[0]

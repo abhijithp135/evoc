@@ -263,13 +263,6 @@ def build_candidates(current_graph, max_candidates, rng_state, n_threads):
     indices = current_graph[0]
     flags = current_graph[2]
 
-    print("checking indices, flags")
-    print(indices)
-    print(flags)
-    print("new candidate indices, old candidate indices")
-    print(new_candidate_indices)
-    print(old_candidate_indices)
-
     # We have to update the flag of indices which are also new candidates to 0
     for i in numba.prange(n_vertices):
         for j in range(n_neighbors):
@@ -280,8 +273,6 @@ def build_candidates(current_graph, max_candidates, rng_state, n_threads):
                     flags[i, j] = 0
                     break
 
-    print("Updated flags")
-    print(flags)
     return new_candidate_indices, old_candidate_indices
 
 

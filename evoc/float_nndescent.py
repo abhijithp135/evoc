@@ -441,7 +441,7 @@ def init_rp_tree_float(data, current_graph, leaf_array, n_threads):
         updates = generate_leaf_updates_float(
             updates, n_updates_per_thread, leaf_block, dist_thresholds, data, n_threads
         )
-        print(current_graph)
+
         # Below flagged_heap_push modifies current_graph as well
         for t in numba.prange(n_threads):
             for j in range(n_threads):
@@ -469,7 +469,6 @@ def init_rp_tree_float(data, current_graph, leaf_array, n_threads):
                             d,
                             p,
                         )
-        print(current_graph)
 
 @numba.njit(
     numba.types.void(
@@ -629,12 +628,7 @@ def nn_descent_float(
     current_graph = make_heap(data.shape[0], n_neighbors)
     # This func updates flags in current_graph to 1 mostly
     init_rp_tree_float(data, current_graph, leaf_array, n_threads)
-    print(verbose)
-    print("printing current graph")
-    print(current_graph)
     init_random_float(n_neighbors, data, current_graph, rng_state)
-    print("printing current graph again")
-    print(current_graph)
 
     n_vertices = data.shape[0]
     n_threads = numba.get_num_threads()
@@ -680,7 +674,6 @@ def nn_descent_float(
                 current_graph, update_array, n_updates_per_thread, n_threads
             )
 
-        print(current_graph)
         if c <= delta * n_neighbors * data.shape[0]:
             if verbose:
                 print("\tStopping threshold met -- exiting after", n + 1, "iterations")

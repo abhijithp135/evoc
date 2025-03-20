@@ -98,14 +98,12 @@ def remap_labels(labels):
 
 
 def label_prop_loop(indptr, indices, data, labels, n_iter=20, approx_n_parts=2048):
-    print(indptr, indices, data)
     for i in range(int(1.25 * approx_n_parts)):
         labels[np.random.randint(labels.shape[0])] = i
 
     for i in range(n_iter):
         new_labels = label_prop_iteration(indptr, indices, data, labels)
         labels = new_labels
-    print("labels", labels)
     labels = label_outliers(indptr, indices, labels)
     return remap_labels(labels)
 
@@ -118,28 +116,22 @@ def label_propagation_init(
     scaling=0.1,
     random_scale=1.0,
     noise_level=0.5,
+    verbose=False
 ):
     labels = np.full(graph.shape[0], -1, dtype=np.int64)
-    print(approx_n_parts)
     partition = label_prop_loop(
         graph.indptr, graph.indices, graph.data, labels, n_iter, approx_n_parts
     )
-    print("partition: ",partition)
     reduction_map = csr_matrix(
         (np.ones(partition.shape[0]), partition, np.arange(partition.shape[0] + 1)),
         shape=(partition.shape[0], partition.max() + 1),
     )
-    print(reduction_map)
-    print(reduction_map.T * graph * reduction_map)
     reduced_graph = (reduction_map.T * graph * reduction_map).tocoo()
-    print("reduced graph", reduced_graph)
     # size of will be num of partions X num of partitions
     reduced_graph.data = np.clip(reduced_graph.data, 0.0, 1.0)
-    print("reduced graph after clip", reduced_graph)
     reduced_layout = node_embedding(
-        reduced_graph, n_components, 50, verbose=False, noise_level=noise_level
+        reduced_graph, n_components, 50, noise_level=noise_level, verbose=verbose
     )
-    print("reduced_layout", reduced_layout)
     # expanding result back to num of samples
     result = reduced_layout[partition]
     result += np.random.normal(

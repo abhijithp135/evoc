@@ -190,8 +190,6 @@ def knn_graph(
         _input_dtype,
         max_depth=max_rptree_depth,
     )
-    print("printing leaf array")
-    print(leaf_array)
 
     if max_candidates is None:
         effective_max_candidates = min(60, n_neighbors)
