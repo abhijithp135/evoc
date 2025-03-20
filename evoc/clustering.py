@@ -248,6 +248,7 @@ def evoc_clusters(
     return_duplicates=False,
     node_embedding_dim=None,
     neighbor_scale=1.0,
+    verbose=False
 ):
     """Cluster data using the EVoC algorithm.
 
@@ -342,11 +343,17 @@ def evoc_clusters(
         Only returned in ``return_duplicates`` is True. A set of pairs of indices of
         potential duplicate points in the data.
     """
-    nn_inds, nn_dists = knn_graph(data, n_neighbors=n_neighbors)
+    nn_inds, nn_dists = knn_graph(data, n_neighbors=n_neighbors, verbose=verbose)
+    print(nn_inds, nn_dists)
     graph = neighbor_graph_matrix(
         neighbor_scale * n_neighbors, nn_inds, nn_dists, symmetrize_graph
     )
+    print("graph: ",graph)
+    """
+    At this point neighbourhood graph is generated
+    """
     if node_embedding_init == "label_prop":
+        # n_components, reduced_graph, noise_level are used used in node_embedding
         init_embedding = label_propagation_init(
             graph,
             n_components=node_embedding_dim or min(n_neighbors, 15),
@@ -358,6 +365,7 @@ def evoc_clusters(
     elif node_embedding_init is None:
         init_embedding = None
 
+    print("init embedding: ", init_embedding)
     graph = graph.tocoo()
     embedding = node_embedding(
         graph,
@@ -517,6 +525,7 @@ class EVoC(BaseEstimator, ClusterMixin):
         symmetrize_graph: bool = True,
         node_embedding_dim: int | None = None,
         neighbor_scale: float = 1.0,
+        verbose: bool = False
     ) -> None:
         self.n_neighbors = n_neighbors
         self.noise_level = noise_level
@@ -531,6 +540,7 @@ class EVoC(BaseEstimator, ClusterMixin):
         self.symmetrize_graph = symmetrize_graph
         self.node_embedding_dim = node_embedding_dim
         self.neighbor_scale = neighbor_scale
+        self.verbose = verbose
 
     def fit_predict(self, X, y=None, **fit_params):
         """Fit the model to the data and return the clustering labels.
@@ -578,19 +588,23 @@ class EVoC(BaseEstimator, ClusterMixin):
                 return_duplicates=True,
                 node_embedding_dim=self.node_embedding_dim,
                 neighbor_scale=self.neighbor_scale,
+                verbose=self.verbose
             )
         )
 
+        print("Done")
         if len(self.cluster_layers_) == 1:
             self.labels_ = self.cluster_layers_[0]
             self.membership_strengths_ = self.membership_strength_layers_[0]
-        else:
+        elif len(self.cluster_layers_) > 1:
             n_points_clustered_per_layer = [
                 np.sum(layer >= 0) for layer in self.cluster_layers_
             ]
             best_layer = np.argmax(n_points_clustered_per_layer)
             self.labels_ = self.cluster_layers_[best_layer]
             self.membership_strengths_ = self.membership_strength_layers_[best_layer]
+        else:
+            self.labels_ = np.random.randint(0, 100, X.shape[0]) 
 
         return self.labels_
 

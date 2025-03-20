@@ -122,6 +122,15 @@ def node_embedding_epoch(
             )
 
 
+"""
+    graph: COO graph
+    n_components: if init_embedding is not None, then only it will be used to generate init_embedding
+    of size num of vertices X n_components
+    n_epochs: number of times we will be running epochs
+    initial_embedding: initial_embedding
+    intial_alpha: learning rate,
+    alpha: dstarts with init_alpha and decreases linearly over epochs and reaches close to 0 finally
+"""
 def node_embedding(
     graph,
     n_components,
@@ -131,7 +140,7 @@ def node_embedding(
     negative_sample_rate=1.0,
     noise_level=0.5,
     verbose=False,
-    tqdm_kwds={},
+    tqdm_kwds=None,
 ):
     if initial_embedding is None:
         embedding = np.random.normal(
@@ -143,25 +152,31 @@ def node_embedding(
     epochs_per_sample = make_epochs_per_sample(graph.data, n_epochs).astype(
         np.float32, order="C"
     )
+    # epochs_per_sample will have size = num of edges in graph
+    print("epochs_per_sample",epochs_per_sample)
     epochs_per_negative_sample = epochs_per_sample / negative_sample_rate
     epoch_of_next_negative_sample = epochs_per_negative_sample.copy()
     epoch_of_next_sample = epochs_per_sample.copy()
 
+    print(tqdm_kwds)
     if tqdm_kwds is None:
-        tqdm_kwds = {}
+        tqdm_kwds = {} 
 
     if "disable" not in tqdm_kwds:
         tqdm_kwds["disable"] = not verbose
 
+    print(tqdm_kwds)
     rng_val = np.random.randint(INT32_MAX, size=n_epochs)
     head_u4 = graph.row.astype(np.uint32)
     tail_u4 = graph.col.astype(np.uint32)
     n_vertices = graph.shape[0]
     dim = embedding.shape[1]
     alpha = initial_alpha
+    print("printing embedding")
+    print(embedding)
 
     for n in tqdm(range(n_epochs), **tqdm_kwds):
-
+        print(f"embedding epoch: {n} / {n_epochs} ")
         node_embedding_epoch(
             embedding,
             head_u4,

@@ -144,13 +144,10 @@ def neighbor_graph_matrix(
     result.eliminate_zeros()
 
     if symmetrize:
-        transpose = result.transpose()
+        transpose = result.transpose()  
 
         prod_matrix = result.multiply(transpose)
         result = result + transpose - prod_matrix
     else:
         result = result.tocsr()
-
-    result.eliminate_zeros()
-
     return result

@@ -433,10 +433,16 @@ def init_rp_tree_float(data, current_graph, leaf_array, n_threads):
         leaf_block = leaf_array[block_start:block_end]
         dist_thresholds = current_graph[1][:, 0]
 
+        """
+        updates will not be appended but overwritten. dist_thresholds will be updated continuously
+        when we process more and more blocks
+
+        """
         updates = generate_leaf_updates_float(
             updates, n_updates_per_thread, leaf_block, dist_thresholds, data, n_threads
         )
-
+        print(current_graph)
+        # Below flagged_heap_push modifies current_graph as well
         for t in numba.prange(n_threads):
             for j in range(n_threads):
                 for k in range(n_updates_per_thread[j]):
@@ -463,7 +469,7 @@ def init_rp_tree_float(data, current_graph, leaf_array, n_threads):
                             d,
                             p,
                         )
-
+        print(current_graph)
 
 @numba.njit(
     numba.types.void(
@@ -544,6 +550,7 @@ def generate_graph_update_array_float(
             if i >= block_size:
                 break
 
+            # here i is a point
             for j in range(max_new_candidates):
                 p = int(new_candidate_block[i, j])
                 if p < 0:
@@ -592,7 +599,6 @@ def generate_graph_update_array_float(
 
         n_updates_per_thread[t] = idx
 
-
 def nn_descent_float(
     data,
     n_neighbors,
@@ -621,8 +627,14 @@ def nn_descent_float(
     """
     n_threads = numba.get_num_threads()
     current_graph = make_heap(data.shape[0], n_neighbors)
+    # This func updates flags in current_graph to 1 mostly
     init_rp_tree_float(data, current_graph, leaf_array, n_threads)
+    print(verbose)
+    print("printing current graph")
+    print(current_graph)
     init_random_float(n_neighbors, data, current_graph, rng_state)
+    print("printing current graph again")
+    print(current_graph)
 
     n_vertices = data.shape[0]
     n_threads = numba.get_num_threads()
@@ -630,7 +642,7 @@ def nn_descent_float(
     n_blocks = n_vertices // block_size
 
     max_updates_per_thread = int(
-        ((max_candidates ** 2 + max_candidates * (max_candidates - 1) / 2) * block_size)
+        ((max_candidates ** 2 + max_candidates * (max_candidates + 1) / 2) * block_size)
     )
     update_array = np.empty((n_threads, max_updates_per_thread, 3), dtype=np.float32)
     n_updates_per_thread = np.zeros(n_threads, dtype=np.int32)
@@ -668,6 +680,7 @@ def nn_descent_float(
                 current_graph, update_array, n_updates_per_thread, n_threads
             )
 
+        print(current_graph)
         if c <= delta * n_neighbors * data.shape[0]:
             if verbose:
                 print("\tStopping threshold met -- exiting after", n + 1, "iterations")
